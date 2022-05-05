@@ -33,6 +33,8 @@ namespace HRD.Services
 
         public async Task<string> SignIn(string userName, string password)
         {
+            await this.Database.ConnectAsync();
+
             using (SqliteCommand command = this.Database.CreateCommand())
             {
                 command.CommandText = "SELECT Hash, Id FROM Users WHERE Username = @username";
@@ -57,6 +59,8 @@ namespace HRD.Services
 
         public async Task<string> SignUp(string userName, string password)
         {
+            await this.Database.ConnectAsync();
+
             using (SqliteCommand command = this.Database.CreateCommand())
             {
                 command.CommandText = "INSERT INTO Users (Username, Hash) VALUES (@username, @hash)";

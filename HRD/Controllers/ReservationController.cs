@@ -16,7 +16,6 @@ namespace HRD.Controllers
     /// the methods themselves.
     /// </summary>
     [ApiController]
-    [Route("[controller]")]
     public class ReservationController : ControllerBase
     {
         private readonly ILogger<ReservationController> Logger;
@@ -35,7 +34,7 @@ namespace HRD.Controllers
         /// </summary>
         /// <returns>The rooms</returns>
         [HttpGet]
-        [Route("/Rooms")]
+        [Route("[controller]/Rooms")]
         public async Task<List<HotelRoom>> GetRooms()
         {
             this.Logger.LogInformation("/Rooms");
@@ -59,7 +58,7 @@ namespace HRD.Controllers
         /// <param name="userId">The technical id of the user</param>
         /// <returns>The reservations</returns>
         [HttpGet]
-        [Route("/Reservations")]
+        [Route("[controller]/Reservations")]
         public async Task<List<Reservation>> GetReservations(int userId)
         {
             this.Logger.LogInformation($"/Reservations => userid: {userId}");
@@ -83,7 +82,7 @@ namespace HRD.Controllers
         /// <param name="reservation">The updated reservation</param>
         /// <returns>Was the update successful</returns>
         [HttpPost]
-        [Route("/UpdateReservation")]
+        [Route("[controller]/UpdateReservation")]
         public async Task<bool> UpdateReservation(Reservation reservation)
         {
             string token = this.Request.Headers["Authorization"];
@@ -110,7 +109,7 @@ namespace HRD.Controllers
         /// <param name="reservationId">The technical id of the reservation</param>
         /// <returns>Was the deletion successful</returns>
         [HttpDelete]
-        [Route("/DeleteReservation")]
+        [Route("[controller]/DeleteReservation")]
         public async Task<bool> DeleteReservation(int reservationId)
         {
             string token = this.Request.Headers["Authorization"];
@@ -139,7 +138,7 @@ namespace HRD.Controllers
         /// <param name="endDate">The end date for a reservation</param>
         /// <returns>Is the room available for the duration?</returns>
         [HttpGet]
-        [Route("/IsRoomAvailable")]
+        [Route("[controller]/IsRoomAvailable")]
         public async Task<bool> IsRoomAvailable(int roomId, long startDate, long endDate)
         {
             this.Logger.LogInformation("/IsRoomAvailable");
@@ -167,7 +166,7 @@ namespace HRD.Controllers
         /// <param name="reservation">The reservation made by the user</param>
         /// <returns>Is the reservation successful?</returns>
         [HttpPost]
-        [Route("/ReserveRoom")]
+        [Route("[controller]/ReserveRoom")]
         public async Task<ReservationResult> ReserveRoom(Reservation reservation)
         {
             string token = this.Request.Headers["Authorization"];
