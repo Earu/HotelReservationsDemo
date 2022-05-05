@@ -136,14 +136,16 @@ namespace HRD.Services
         /// </summary>
         /// <param name="reservationId">The technical id of the reservation</param>
         /// <returns>Was the deletion successful</returns>
-        public async Task<bool> DeleteReservationAsync(int reservationId)
+        public async Task<bool> DeleteReservationAsync(int userId, int reservationId)
         {
             await this.Database.ConnectAsync();
 
             using (SqliteCommand command = this.Database.CreateCommand())
             {
-                command.CommandText = "DELETE FROM Reservations ReservationId = @reservationid";
+                command.CommandText = "DELETE FROM Reservations ReservationId = @reservationid AND UserId = @userid";
                 command.Parameters.AddWithValue("@reservationid", reservationId);
+                command.Parameters.AddWithValue("@userid", userId);
+
                 return await command.ExecuteNonQueryAsync() >= 1;
             }
         }

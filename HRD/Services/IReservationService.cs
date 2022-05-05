@@ -11,7 +11,7 @@ namespace HRD.Services
         Task<bool> IsRoomAvailable(int roomId, long startDate, long endDate);
         Task<Reservation> GetReservationAsync(int reservationId);
         Task<bool> UpdateReservationAsync(int userId, Reservation reservation);
-        Task<bool> DeleteReservationAsync(int reservationId);
+        Task<bool> DeleteReservationAsync(int userId, int reservationId);
         Task<ReservationResult> ReserveRoomAsync(Reservation reservation);
     }
 }

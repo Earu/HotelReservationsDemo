@@ -9,17 +9,25 @@ using System.Threading.Tasks;
 
 namespace HRD.Controllers
 {
+    /// <summary>
+    /// DISCLAIMER:
+    /// Some of the methods here would typically use the [Authorize] attribute to guarantee that the user is logged in when accessing
+    /// the page, or API endpoint, however here since the login is "home-made", its a bit different. So for simplicity's sake I'm checking in 
+    /// the methods themselves.
+    /// </summary>
     [ApiController]
     [Route("[controller]")]
     public class ReservationController : ControllerBase
     {
         private readonly ILogger<ReservationController> Logger;
         private readonly IReservationService Reservations;
+        private readonly ISessionService Sessions;
 
-        public ReservationController(IReservationService reservations, ILogger<ReservationController> logger)
+        public ReservationController(IReservationService reservations, ISessionService sessions,  ILogger<ReservationController> logger)
         {
             this.Logger = logger;
             this.Reservations = reservations;
+            this.Sessions = sessions;
         }
 
         /// <summary>
@@ -83,6 +91,8 @@ namespace HRD.Controllers
 
             try
             {
+                if (!this.Sessions.TryGetUserSession(token, out int userId)) return false;
+
                 return await this.Reservations.UpdateReservationAsync(userId, reservation);
             }
             catch (Exception ex)
@@ -108,6 +118,8 @@ namespace HRD.Controllers
 
             try
             {
+                if (!this.Sessions.TryGetUserSession(token, out int userId)) return false;
+
                 return await this.Reservations.DeleteReservationAsync(userId, reservationId);
             }
             catch (Exception ex)
@@ -155,13 +167,16 @@ namespace HRD.Controllers
         /// <param name="reservation">The reservation made by the user</param>
         /// <returns>Is the reservation successful?</returns>
         [HttpPost]
-        [Route("/ReserverRoom")]
+        [Route("/ReserveRoom")]
         public async Task<ReservationResult> ReserveRoom(Reservation reservation)
         {
+            string token = this.Request.Headers["Authorization"];
             this.Logger.LogInformation("/ReserverRoom");
 
             try
-            { 
+            {
+                if (!this.Sessions.TryGetUserSession(token, out int userId)) return ReservationResult.TechnicalError; // might as well not tell the user anything useful in case of a security breach
+
                 return await this.Reservations.ReserveRoomAsync(reservation);
             }
             catch (Exception ex)

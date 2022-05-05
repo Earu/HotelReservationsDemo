@@ -29,6 +29,7 @@ namespace HRD
 
             services.AddScoped<IReservationService, ReservationService>();
             services.AddSingleton<IDatabaseService, DatabaseService>();
+            services.AddSingleton<ISessionService, SessionService>(); // this needs to be a singleton because the session tokens are stored in the instance of the class
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
