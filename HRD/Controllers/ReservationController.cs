@@ -50,7 +50,7 @@ namespace HRD.Controllers
                 this.Logger.LogError(ex.ToString());
                 this.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
-                return null;
+                return new List<HotelRoom>();
             }
         }
 
@@ -147,7 +147,7 @@ namespace HRD.Controllers
 
             try
             {
-                return await this.Reservations.IsRoomAvailable(roomId, startDate.Ticks, endDate.Ticks);
+                return await this.Reservations.ValidateReservationInputs(roomId, startDate.Ticks, endDate.Ticks) == ReservationResult.Success;
             }
             catch (Exception ex)
             {

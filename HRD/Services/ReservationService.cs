@@ -171,7 +171,7 @@ namespace HRD.Services
         /// <param name="startDate">The start date for the reservation</param>
         /// <param name="endDate">The end date for the reservation</param>
         /// <returns>Is the room available</returns>
-        public async Task<bool> IsRoomAvailable(int roomId, long startDate, long endDate)
+        private async Task<bool> IsRoomAvailable(int roomId, long startDate, long endDate)
         {
             using (SQLiteCommand command = await this.Database.CreateCommandAsync())
             {
@@ -203,7 +203,7 @@ namespace HRD.Services
         /// <param name="startDate">The start date of the reservation</param>
         /// <param name="endDate">The end date of the reservation</param>
         /// <returns>The result, error, valid, etc...</returns>
-        private async Task<ReservationResult> ValidateReservationInputs(int roomId, long startDate, long endDate)
+        public async Task<ReservationResult> ValidateReservationInputs(int roomId, long startDate, long endDate)
         {
             if (endDate < startDate) return ReservationResult.InvalidReservationDates; // end cant be before start
             if (startDate > endDate) return ReservationResult.InvalidReservationDates; // start cant be before end
