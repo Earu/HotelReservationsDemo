@@ -135,7 +135,7 @@ namespace HRD.Services
         {
             using (SQLiteCommand command = await this.Database.CreateCommandAsync())
             {
-                command.CommandText = "DELETE FROM Reservations ReservationId = @reservationid AND UserId = @userid;";
+                command.CommandText = "DELETE FROM Reservations WHERE Id = @reservationid AND UserId = @userid;";
                 command.Parameters.AddWithValue("@reservationid", reservationId);
                 command.Parameters.AddWithValue("@userid", userId);
 
@@ -171,15 +171,15 @@ namespace HRD.Services
         /// <param name="startDate">The start date for the reservation</param>
         /// <param name="endDate">The end date for the reservation</param>
         /// <returns>Is the room available</returns>
-        private async Task<bool> IsRoomAvailable(int roomId, long startDate, long endDate)
+        private async Task<bool> IsRoomAvailable(int roomId, DateTime startDate, DateTime endDate)
         {
             using (SQLiteCommand command = await this.Database.CreateCommandAsync())
             {
                 command.CommandText = "SELECT Rooms.Id "
                     + "FROM Reservations, Rooms "
                     + "WHERE Reservations.RoomId = Rooms.Id "
-                    + "AND ((StartDate < @enddate AND StartDate >= @startdate) OR(EndDate < @enddate AND EndDate >= @startdate)) "
-                    + "AND ((@startdate < EndDate AND @startdate >= StartDate) OR(@enddate < EndDate AND @enddate >= StartDate));";
+                    + "AND (((StartDate < @enddate AND StartDate >= @startdate) OR (EndDate < @enddate AND EndDate >= @startdate)) "
+                    + "OR ((@startdate < EndDate AND @startdate >= StartDate) OR (@enddate < EndDate AND @enddate >= StartDate)));";
 
                 command.Parameters.AddWithValue("@startdate", startDate);
                 command.Parameters.AddWithValue("@enddate", endDate);
@@ -203,13 +203,13 @@ namespace HRD.Services
         /// <param name="startDate">The start date of the reservation</param>
         /// <param name="endDate">The end date of the reservation</param>
         /// <returns>The result, error, valid, etc...</returns>
-        public async Task<ReservationResult> ValidateReservationInputs(int roomId, long startDate, long endDate)
+        public async Task<ReservationResult> ValidateReservationInputs(int roomId, DateTime startDate, DateTime endDate)
         {
             if (endDate < startDate) return ReservationResult.InvalidReservationDates; // end cant be before start
             if (startDate > endDate) return ReservationResult.InvalidReservationDates; // start cant be before end
 
-            if (startDate < DateTime.Today.AddDays(MINIMUM_DAYS_BEFORE_RESERVATION).Ticks) return ReservationResult.ReservationTooEarly; // we cant reserve less than 30 days before occupying the room
-            if (new TimeSpan(endDate - startDate).TotalDays > MAXIMUM_RESERVATION_LENGTH) return ReservationResult.ReservationTooLong; // we cant reserve for longer than 3 days
+            if (startDate < DateTime.Today.AddDays(MINIMUM_DAYS_BEFORE_RESERVATION)) return ReservationResult.ReservationTooEarly; // we cant reserve less than 30 days before occupying the room
+            if ((endDate - startDate).TotalDays > MAXIMUM_RESERVATION_LENGTH) return ReservationResult.ReservationTooLong; // we cant reserve for longer than 3 days
 
             bool isAvailable = await this.IsRoomAvailable(roomId, startDate, endDate); // check whether there is any reservations that would make the room unavailable
             if (!isAvailable) return ReservationResult.RoomNotAvailable;
@@ -232,7 +232,7 @@ namespace HRD.Services
         {
             try
             {
-                ReservationResult validationResult = await this.ValidateReservationInputs(reservation.RoomId, reservation.StartDate.Ticks, reservation.EndDate.Ticks);
+                ReservationResult validationResult = await this.ValidateReservationInputs(reservation.RoomId, reservation.StartDate, reservation.EndDate);
                 if (validationResult != ReservationResult.Success)
                 {
                     return new ReservationResponse

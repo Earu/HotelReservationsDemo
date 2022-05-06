@@ -147,7 +147,7 @@ namespace HRD.Controllers
 
             try
             {
-                return await this.Reservations.ValidateReservationInputs(roomId, startDate.Ticks, endDate.Ticks) == ReservationResult.Success;
+                return await this.Reservations.ValidateReservationInputs(roomId, startDate, endDate) == ReservationResult.Success;
             }
             catch (Exception ex)
             {
