@@ -3,15 +3,15 @@
 *Challenge proposed by the company ALTEN*
 
 ## Environment
-The application comes packaged with `swagger` which generates real-time docs for the API endpoints and also lets you experiment with them. Although it does it in a simple manner, for modifying headers you probably will require software such as `Postman`.
+The application comes packaged with `swagger` which generates real-time docs for the API endpoints and also lets you experiment with them. Although it does it in a simple manner, for modifying headers you will probably require software such as `Postman`.
 
 - The default endpoint for swagger locally is: http://localhost:62059/swagger/index.html
 - The default endpoint for the API is: http://localhost:62059
 
-You can start the webserver by debugging with using `Visual Studio` or the `dotnet core CLI`.
+You can start the webserver by debugging with `Visual Studio` or using the `dotnet core CLI`.
 
 ## Usage
-The API already provides a room that can be booked in the hotel, there are currently no way to add more rooms, this could be added in a further version.
+The API already provides a room that can be booked in the hotel, there are currently no ways to add more rooms, this could be added in a further version.
 
 - ### Booking the room
 	1) POST request to ```/Authentication/SignUp``` OR ```/Authentication/SignIn```
