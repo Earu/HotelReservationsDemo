@@ -1,7 +1,10 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using HRD.Models;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
+using System.Data.Common;
+using System.Data.SQLite;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,16 +34,14 @@ namespace HRD.Services
         }
 
 
-        public async Task<string> SignIn(string userName, string password)
+        public async Task<UserLoginResponse> SignIn(string userName, string password)
         {
-            await this.Database.ConnectAsync();
-
-            using (SqliteCommand command = this.Database.CreateCommand())
+            using (SQLiteCommand command = await this.Database.CreateCommandAsync())
             {
-                command.CommandText = "SELECT Hash, Id FROM Users WHERE Username = @username";
+                command.CommandText = "SELECT Hash, Id FROM Users WHERE UserName = @username;";
                 command.Parameters.AddWithValue("@username", userName);
 
-                using (SqliteDataReader reader = await command.ExecuteReaderAsync())
+                using (DbDataReader reader = await command.ExecuteReaderAsync())
                 {
                     if (!reader.HasRows) return null; // no such username
 
@@ -52,18 +53,39 @@ namespace HRD.Services
                     if (knownHash != providedHash) return null; // incorrect password
 
                     int userId = reader.GetInt32(1);
-                    return this.GenerateToken(userId); // generate the session token, NOTE: These should probably expire
+                    return new UserLoginResponse
+                    {
+                        SessionToken = this.GenerateToken(userId), // generate the session token, NOTE: These should probably expire
+                        UserId = userId,
+                    };
                 }
             }
         }
 
-        public async Task<string> SignUp(string userName, string password)
+        private async Task<int> GetUserIdAsync(string userName)
         {
-            await this.Database.ConnectAsync();
-
-            using (SqliteCommand command = this.Database.CreateCommand())
+            using (SQLiteCommand command = await this.Database.CreateCommandAsync())
             {
-                command.CommandText = "INSERT INTO Users (Username, Hash) VALUES (@username, @hash)";
+                command.CommandText = "SELECT Id FROM Users WHERE UserName = @username;";
+                command.Parameters.AddWithValue("@username", userName);
+                await command.PrepareAsync();
+
+                int? userId = command.ExecuteScalar() as int?;
+                if (userId.HasValue) return userId.Value; // this should never happen but you never know...
+            }
+
+
+            return -1;
+        }
+
+        public async Task<UserLoginResponse> SignUp(string userName, string password)
+        {
+            int userId = await this.GetUserIdAsync(userName);
+            if (userId != -1) return await this.SignIn(userName, password); // if the account exists, try to sign in
+
+            using (SQLiteCommand command = await this.Database.CreateCommandAsync())
+            {
+                command.CommandText = "INSERT INTO Users (UserName, Hash) VALUES (@username, @hash);";
                 command.Parameters.AddWithValue("@username", userName);
                 command.Parameters.AddWithValue("@hash", this.HashPassword(password));
 
@@ -71,16 +93,13 @@ namespace HRD.Services
                     return null; // failed to register in db
             }
 
-            using (SqliteCommand command = this.Database.CreateCommand())
+            userId = (int)this.Database.LastInsertedId;
+
+            return new UserLoginResponse
             {
-                command.CommandText = "SELECT Id FROM Users WHERE Username = @username";
-                command.Parameters.AddWithValue("@username", userName);
-
-                int? userId = await command.ExecuteScalarAsync() as int?;
-                if (!userId.HasValue) return null; // this should never happen but you never know...
-
-                return this.GenerateToken(userId.Value);
-            }
+                SessionToken = this.GenerateToken(userId), // generate the session token, NOTE: These should probably expire
+                UserId = userId,
+            };
         }
 
         public bool TryGetUserSession(string token, out int userId)

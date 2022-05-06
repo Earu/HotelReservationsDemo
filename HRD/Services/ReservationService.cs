@@ -1,8 +1,9 @@
 ﻿using HRD.Models;
-using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
+using System.Data.SQLite;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -40,12 +41,10 @@ namespace HRD.Services
         {
             List<HotelRoom> rooms = new();
 
-            await this.Database.ConnectAsync();
-
-            using (SqliteCommand command = this.Database.CreateCommand())
+            using (SQLiteCommand command = await this .Database.CreateCommandAsync())
             {
-                command.CommandText = "SELECT Id, Name FROM Rooms";
-                using (SqliteDataReader reader = await command.ExecuteReaderAsync())
+                command.CommandText = "SELECT Id, Name FROM Rooms;";
+                using (DbDataReader reader = await command.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())
                     {
@@ -70,22 +69,20 @@ namespace HRD.Services
         {
             List<Reservation> reservations = new();
 
-            await this.Database.ConnectAsync();
-
-            using (SqliteCommand command = this.Database.CreateCommand())
+            using (SQLiteCommand command = await this.Database.CreateCommandAsync())
             {
-                command.CommandText = "SELECT RoomId, StartDate, EndDate, UserId, Id FROM Reservations WHERE UserId = @userid";
+                command.CommandText = "SELECT RoomId, StartDate, EndDate, UserId, Id FROM Reservations WHERE UserId = @userid;";
                 command.Parameters.AddWithValue("@userid", userId);
 
-                using (SqliteDataReader reader = await command.ExecuteReaderAsync())
+                using (DbDataReader reader = await command.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())
                     {
                         reservations.Add(new Reservation
                         {
                             RoomId = reader.GetInt32(0),
-                            StartDate = reader.GetInt64(1),
-                            EndDate = reader.GetInt64(2),
+                            StartDate = reader.GetDateTime(1),
+                            EndDate = reader.GetDateTime(2),
                             UserId = reader.GetInt32(3),
                             Id = reader.GetInt32(4),
                         });
@@ -103,14 +100,12 @@ namespace HRD.Services
         /// <returns>The reservation if any was found</returns>
         public async Task<Reservation> GetReservationAsync(int reservationId)
         {
-            await this.Database.ConnectAsync();
-
-            using (SqliteCommand command = this.Database.CreateCommand())
+            using (SQLiteCommand command = await this.Database.CreateCommandAsync())
             {
-                command.CommandText = "SELECT RoomId, StartDate, EndDate, UserId, Id FROM Reservations WHERE ReservationId = @reservationid";
+                command.CommandText = "SELECT RoomId, StartDate, EndDate, UserId, Id FROM Reservations WHERE ReservationId = @reservationid;";
                 command.Parameters.AddWithValue("@reservationid", reservationId);
 
-                using (SqliteDataReader reader = await command.ExecuteReaderAsync())
+                using (DbDataReader reader = await command.ExecuteReaderAsync())
                 {
                     if (!reader.HasRows) return null;
 
@@ -122,8 +117,8 @@ namespace HRD.Services
                     return new Reservation
                     {
                         RoomId = reader.GetInt32(0),
-                        StartDate = reader.GetInt64(1),
-                        EndDate = reader.GetInt64(2),
+                        StartDate = reader.GetDateTime(1),
+                        EndDate = reader.GetDateTime(2),
                         UserId = reader.GetInt32(3),
                         Id = reader.GetInt32(4),
                     };
@@ -138,11 +133,9 @@ namespace HRD.Services
         /// <returns>Was the deletion successful</returns>
         public async Task<bool> DeleteReservationAsync(int userId, int reservationId)
         {
-            await this.Database.ConnectAsync();
-
-            using (SqliteCommand command = this.Database.CreateCommand())
+            using (SQLiteCommand command = await this.Database.CreateCommandAsync())
             {
-                command.CommandText = "DELETE FROM Reservations ReservationId = @reservationid AND UserId = @userid";
+                command.CommandText = "DELETE FROM Reservations ReservationId = @reservationid AND UserId = @userid;";
                 command.Parameters.AddWithValue("@reservationid", reservationId);
                 command.Parameters.AddWithValue("@userid", userId);
 
@@ -158,11 +151,9 @@ namespace HRD.Services
         /// <returns>Was the update successful?</returns>
         public async Task<bool> UpdateReservationAsync(int userId, Reservation reservation)
         {
-            await this.Database.ConnectAsync();
-
-            using (SqliteCommand command = this.Database.CreateCommand())
+            using (SQLiteCommand command = await this.Database.CreateCommandAsync())
             {
-                command.CommandText = "UPDATE Reservations SET RoomId = @roomid, StartDate = @startdate, EndDate = @enddate WHERE Id = @reservationid AND UserId = @userid";
+                command.CommandText = "UPDATE Reservations SET RoomId = @roomid, StartDate = @startdate, EndDate = @enddate WHERE Id = @reservationid AND UserId = @userid;";
                 command.Parameters.AddWithValue("@roomid", reservation.RoomId);
                 command.Parameters.AddWithValue("@startdate", reservation.StartDate);
                 command.Parameters.AddWithValue("@enddate", reservation.EndDate);
@@ -182,15 +173,18 @@ namespace HRD.Services
         /// <returns>Is the room available</returns>
         public async Task<bool> IsRoomAvailable(int roomId, long startDate, long endDate)
         {
-            await this.Database.ConnectAsync();
-
-            using (SqliteCommand command = this.Database.CreateCommand())
+            using (SQLiteCommand command = await this.Database.CreateCommandAsync())
             {
-                command.CommandText = "SELECT Id FROM Reservations, Rooms WHERE Reservations.RoomId = Rooms.Id AND ((StartDate < @enddate AND StartDate >= @startdate) OR (EndDate < @endate AND EndDate >= @startdate))";
+                command.CommandText = "SELECT Rooms.Id "
+                    + "FROM Reservations, Rooms "
+                    + "WHERE Reservations.RoomId = Rooms.Id "
+                    + "AND ((StartDate < @enddate AND StartDate >= @startdate) OR(EndDate < @enddate AND EndDate >= @startdate)) "
+                    + "AND ((@startdate < EndDate AND @startdate >= StartDate) OR(@enddate < EndDate AND @enddate >= StartDate));";
+
                 command.Parameters.AddWithValue("@startdate", startDate);
                 command.Parameters.AddWithValue("@enddate", endDate);
 
-                using (SqliteDataReader reader = await command.ExecuteReaderAsync())
+                using (DbDataReader reader = await command.ExecuteReaderAsync())
                 {
                     while (await reader.ReadAsync())
                     {
@@ -234,31 +228,44 @@ namespace HRD.Services
         /// <param name="startDate">The start date of the reservation</param>
         /// <param name="endDate">The end date of the reservation</param>
         /// <returns>The result, error, valid, etc...</returns>
-        public async Task<ReservationResult> ReserveRoomAsync(Reservation reservation)
+        public async Task<ReservationResponse> ReserveRoomAsync(Reservation reservation)
         {
             try
             {
-                ReservationResult validationResult = await this.ValidateReservationInputs(reservation.RoomId, reservation.StartDate, reservation.EndDate);
-                if (validationResult != ReservationResult.Success) return validationResult;
+                ReservationResult validationResult = await this.ValidateReservationInputs(reservation.RoomId, reservation.StartDate.Ticks, reservation.EndDate.Ticks);
+                if (validationResult != ReservationResult.Success)
+                {
+                    return new ReservationResponse
+                    {
+                        ReservationId = -1,
+                        Status = validationResult,
+                    };
+                }
 
-                DateTime sanitizedStartDate = new DateTime(reservation.StartDate).Date;
-                DateTime sanitizedEndDate = new DateTime(reservation.EndDate).Date;
+                DateTime sanitizedStartDate = reservation.StartDate.Date;
+                DateTime sanitizedEndDate = reservation.EndDate.Date;
 
                 // if the reservation length is under the minimum length, standardize it to the minimum
                 if (sanitizedEndDate < sanitizedStartDate.AddDays(MINIMUM_RESERVATION_LENGTH))
                     sanitizedEndDate = sanitizedStartDate.AddDays(MINIMUM_RESERVATION_LENGTH);
 
-                await this.Database.ConnectAsync();
-
-                using (SqliteCommand command = this.Database.CreateCommand())
+                using (SQLiteCommand command = await this.Database.CreateCommandAsync())
                 {
-                    command.CommandText = "INSERT INTO Reservations (RoomId, StartDate, EndDate) VALUES (@roomid, @startdate, @enddate)";
+                    command.CommandText = "INSERT INTO Reservations (RoomId, StartDate, EndDate, UserId) VALUES (@roomid, @startdate, @enddate, @userid);";
                     command.Parameters.AddWithValue("@roomid", reservation.RoomId);
-                    command.Parameters.AddWithValue("@startdate", sanitizedStartDate.Ticks);
-                    command.Parameters.AddWithValue("@enddate", sanitizedEndDate.Ticks);
+                    command.Parameters.AddWithValue("@startdate", sanitizedStartDate);
+                    command.Parameters.AddWithValue("@enddate", sanitizedEndDate);
+                    command.Parameters.AddWithValue("@userid", reservation.UserId);
 
                     if (await command.ExecuteNonQueryAsync() == 1) // make sure the database was updated with the new reservation
-                        return ReservationResult.Success;
+                    {
+                        return new ReservationResponse
+                        {
+                            ReservationId = (int)this.Database.LastInsertedId,
+                            Status = ReservationResult.Success,
+                        };
+
+                    }
                 }
             }
             catch (Exception ex)
@@ -266,7 +273,11 @@ namespace HRD.Services
                 this.Logger.LogError(ex.ToString());
             }
 
-            return ReservationResult.TechnicalError;
+            return new ReservationResponse
+            {
+                ReservationId = -1,
+                Status = ReservationResult.TechnicalError,
+            };
         }
     }
 }

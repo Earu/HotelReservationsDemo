@@ -1,11 +1,11 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using System.Data.SQLite;
 using System.Threading.Tasks;
 
 namespace HRD.Services
 {
     public interface IDatabaseService
     {
-        Task ConnectAsync();
-        SqliteCommand CreateCommand();
+        Task<SQLiteCommand> CreateCommandAsync();
+        long LastInsertedId { get; }
     }
 }

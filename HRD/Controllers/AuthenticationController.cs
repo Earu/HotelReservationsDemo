@@ -26,7 +26,7 @@ namespace HRD.Controllers
         /// <returns>The session token if registration was succesful</returns>
         [HttpPost]
         [Route("[controller]/SignUp")]
-        public async Task<string> SignUp(UserLogin login)
+        public async Task<UserLoginResponse> SignUp(UserLogin login)
         {
             this.Logger.LogInformation("/SignUp");
 
@@ -48,7 +48,7 @@ namespace HRD.Controllers
         /// <returns>The session token if sign in was succesful</returns>
         [HttpPost]
         [Route("[controller]/SignIn")]
-        public async Task<string> SignIn(UserLogin login)
+        public async Task<UserLoginResponse> SignIn(UserLogin login)
         {
             this.Logger.LogInformation("/SignIn");
 

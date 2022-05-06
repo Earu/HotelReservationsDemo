@@ -139,13 +139,13 @@ namespace HRD.Controllers
         /// <returns>Is the room available for the duration?</returns>
         [HttpGet]
         [Route("[controller]/IsRoomAvailable")]
-        public async Task<bool> IsRoomAvailable(int roomId, long startDate, long endDate)
+        public async Task<bool> IsRoomAvailable(int roomId, DateTime startDate, DateTime endDate)
         {
             this.Logger.LogInformation("/IsRoomAvailable");
 
             try
             {
-                return await this.Reservations.IsRoomAvailable(roomId, startDate, endDate);
+                return await this.Reservations.IsRoomAvailable(roomId, startDate.Ticks, endDate.Ticks);
             }
             catch (Exception ex)
             {
@@ -167,15 +167,23 @@ namespace HRD.Controllers
         /// <returns>Is the reservation successful?</returns>
         [HttpPost]
         [Route("[controller]/ReserveRoom")]
-        public async Task<ReservationResult> ReserveRoom(Reservation reservation)
+        public async Task<ReservationResponse> ReserveRoom(Reservation reservation)
         {
             string token = this.Request.Headers["Authorization"];
             this.Logger.LogInformation("/ReserverRoom");
 
             try
             {
-                if (!this.Sessions.TryGetUserSession(token, out int userId)) return ReservationResult.TechnicalError; // might as well not tell the user anything useful in case of a security breach
+                if (!this.Sessions.TryGetUserSession(token, out int userId))
+                {
+                    return new ReservationResponse
+                    {
+                        ReservationId = -1,
+                        Status = ReservationResult.TechnicalError, // might as well not tell the user anything useful in case of an attack
+                    };
+                }
 
+                reservation.UserId = userId; // make sure another user cant spoof another
                 return await this.Reservations.ReserveRoomAsync(reservation);
             }
             catch (Exception ex)
@@ -183,7 +191,11 @@ namespace HRD.Controllers
                 this.Logger.LogError(ex.ToString());
                 this.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
-                return ReservationResult.TechnicalError;
+                return new ReservationResponse
+                {
+                    ReservationId = -1,
+                    Status = ReservationResult.TechnicalError,
+                };
             }
         }
     }
