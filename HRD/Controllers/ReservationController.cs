@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 namespace HRD.Controllers
 {
     /// <summary>
+    /// The API controller for the business logic, in this case hotel room reservations / booking
+    /// 
     /// DISCLAIMER:
     /// Some of the methods here would typically use the [Authorize] attribute to guarantee that the user is logged in when accessing
     /// the page, or API endpoint, however here since the login is "home-made", its a bit different. So for simplicity's sake I'm checking in 

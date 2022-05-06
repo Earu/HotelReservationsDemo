@@ -1,5 +1,8 @@
 ﻿namespace HRD.Models
 {
+    /// <summary>
+    /// The different possible results for a reservation request
+    /// </summary>
     public enum ReservationResult
     {
         Unknown,

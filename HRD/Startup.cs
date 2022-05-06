@@ -12,7 +12,7 @@ namespace HRD
     {
         public Startup(IConfiguration configuration)
         {
-            this.Configuration = configuration;
+            this.Configuration = configuration; // stores the contents of appsettings.json
         }
 
         public IConfiguration Configuration { get; }
@@ -27,6 +27,7 @@ namespace HRD
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "HRD", Version = "v1" });
             });
 
+            // inject our services here
             services.AddScoped<IReservationService, ReservationService>();
             services.AddSingleton<IDatabaseService, DatabaseService>();
             services.AddSingleton<ISessionService, SessionService>(); // this needs to be a singleton because the session tokens are stored in the instance of the class

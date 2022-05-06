@@ -2,6 +2,9 @@
 
 namespace HRD.Models
 {
+    /// <summary>
+    /// A room reservation made by a user
+    /// </summary>
     public class Reservation
     {
         public int RoomId { get; set; }

@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace HRD.Controllers
 {
+    /// <summary>
+    /// The API controller for authentication
+    /// </summary>
     [ApiController]
     public class AuthenticationController : ControllerBase
     {

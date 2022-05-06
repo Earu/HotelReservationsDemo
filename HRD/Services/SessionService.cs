@@ -1,5 +1,4 @@
 ﻿using HRD.Models;
-using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
@@ -33,7 +32,12 @@ namespace HRD.Services
             this.Sessions = new ConcurrentDictionary<string, int>();
         }
 
-
+        /// <summary>
+        /// Attempt to sign in an existing user
+        /// </summary>
+        /// <param name="userName">The username of the user</param>
+        /// <param name="password">The password of the user</param>
+        /// <returns>Login response</returns>
         public async Task<UserLoginResponse> SignIn(string userName, string password)
         {
             using (SQLiteCommand command = await this.Database.CreateCommandAsync())
@@ -62,6 +66,11 @@ namespace HRD.Services
             }
         }
 
+        /// <summary>
+        /// Try to get the an existing user's technical id
+        /// </summary>
+        /// <param name="userName"></param>
+        /// <returns></returns>
         private async Task<int> GetUserIdAsync(string userName)
         {
             using (SQLiteCommand command = await this.Database.CreateCommandAsync())
@@ -78,6 +87,12 @@ namespace HRD.Services
             return -1;
         }
 
+        /// <summary>
+        /// Attemps to register a new user
+        /// </summary>
+        /// <param name="userName">The username of the user</param>
+        /// <param name="password">The password of the user</param>
+        /// <returns>Login response</returns>
         public async Task<UserLoginResponse> SignUp(string userName, string password)
         {
             int userId = await this.GetUserIdAsync(userName);
@@ -102,6 +117,12 @@ namespace HRD.Services
             };
         }
 
+        /// <summary>
+        /// Attemps to find an existing session for a specific user id
+        /// </summary>
+        /// <param name="token">The session token for the user id</param>
+        /// <param name="userId">The matching user id</param>
+        /// <returns>Did we find the session</returns>
         public bool TryGetUserSession(string token, out int userId)
         {
             if (this.Sessions.TryGetValue(token, out userId))
@@ -111,9 +132,19 @@ namespace HRD.Services
             return false;
         }
 
+        /// <summary>
+        /// Creates a SHA256 hash out of the user password
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns></returns>
         private string HashPassword(string password)
             => Encoding.UTF8.GetString(SHA256.HashData(Encoding.UTF8.GetBytes(password)));
 
+        /// <summary>
+        /// Generates a temporary user session token
+        /// </summary>
+        /// <param name="userId">The user's technical id</param>
+        /// <returns>The generated token</returns>
         private string GenerateToken(int userId)
         {
             Random rand = new();
