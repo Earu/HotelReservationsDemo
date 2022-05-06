@@ -40,8 +40,8 @@ The API already provides a room that can be booked in the hotel, there are curre
 	- Expected request:
 		```json
 		{
-			"Username": "username", // the user's username
-			"Password": "password" // the user's password
+			"userName": "username", // the user's username
+			"password": "password" // the user's password
 		}
 		```
 	- Expected response:
@@ -58,8 +58,8 @@ The API already provides a room that can be booked in the hotel, there are curre
 	- Expected request:
 		```json
 		{
-			"Username": "username", // the user's username
-			"Password": "password" // the user's password
+			"userName": "username", // the user's username
+			"password": "password" // the user's password
 		}
 		```
 	- Expected response:
